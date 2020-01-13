@@ -1,0 +1,6 @@
+/.venv/
+/files.json
+/.idea/
+/o/
+/*.tar.gz
+/.vscode
