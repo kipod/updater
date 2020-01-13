@@ -8,6 +8,7 @@ import datetime
 import platform
 import tarfile
 from urllib.parse import urlparse
+import console
 
 VERSION = '1.0'
 DEFAULT_FTP_BASE_URL = 'ftp://builderust.dev.ath/tachyon/'
@@ -17,6 +18,7 @@ DEFAULT_DIST_FILE = {
     'Darwin': 'tachyon-macos.tar.gz'
 }[platform.system()]
 CONFIG_FILE = 'config.json'
+CONSOLE_WIDTH, _= console.getTerminalSize()
 
 g_args = None
 
@@ -145,7 +147,7 @@ class Downloader(object):
             self.file.write(data)
             print_progress(len(data))
 
-        self.ftp.retrbinary('RETR {}'.format(file_name), parse_bin)
+        self.ftp.retrbinary('RETR {}'.format(file_name), parse_bin, blocksize=8192)
         if file_size:
             print_progress(file_size, True)
 
@@ -156,7 +158,7 @@ class Downloader(object):
         return [f for f, attr in self.ftp.mlsd() if attr['type'] == 'file']
 
 
-def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', print_end="\r"):
+def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, fill='█'):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -165,14 +167,14 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
         prefix      - Optional  : prefix string (Str)
         suffix      - Optional  : suffix string (Str)
         decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
     """
+    BAR_FORMAT = '%s |%s| %s%% %s'
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    length = CONSOLE_WIDTH - len(BAR_FORMAT % (prefix, '', percent, suffix)) - 2
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=print_end)
+    print(BAR_FORMAT % (prefix, bar, percent, suffix), end='\r')
     # Print New Line on Complete
     if iteration == total:
         print()
