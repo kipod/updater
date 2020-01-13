@@ -42,7 +42,7 @@ def main():
             print('FTP error: ', e)
             return
 
-    with Unpacker(g_args.file_name) as compressed_file:
+    with Unpacker(g_args.file_name, target_path='o') as compressed_file:
         try:
             compressed_file.extruct()
         except tarfile.TarError as e:
@@ -51,8 +51,9 @@ def main():
 
 
 class Unpacker(object):
-    def __init__(self, file_path):
+    def __init__(self, file_path, target_path):
         self.tar_file_path = file_path
+        self.target = target_path
         self.__tar = None
 
     def close(self):
@@ -85,13 +86,15 @@ class Unpacker(object):
         for info in infos:
             if info.isdir():
                 # os.makedirs(info.name, exist_ok=True)
-                self.__tar.extractfile(info)
+                self.__tar.extract(info, path=self.target)
             elif info.isfile():
-                self.__tar.extractfile(info)
+                self.__tar.extract(info, path=self.target)
                 completed_size += info.size
-                print_progress(completed_size)
-            else:
-                pass
+                if completed_size < total_size:
+                    print_progress(completed_size)
+        if total_size:
+            print_progress(total_size, True)
+
 
 class Downloader(object):
     def __init__(self):
@@ -141,7 +144,6 @@ class Downloader(object):
                 self.file = open(g_args.file_name, 'bw')
             self.file.write(data)
             print_progress(len(data))
-            pass
 
         self.ftp.retrbinary('RETR {}'.format(file_name), parse_bin)
         if file_size:
